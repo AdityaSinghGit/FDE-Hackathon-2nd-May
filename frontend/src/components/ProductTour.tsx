@@ -53,41 +53,63 @@ interface ProductTourProps {
 
 export function ProductTour({ onComplete }: ProductTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
-  const [coords, setCoords] = useState({ top: 0, left: 0 });
+  const [coords, setCoords] = useState({ top: "50%", left: "50%" });
 
   const step = TOUR_STEPS[currentStep];
 
   useEffect(() => {
     if (step.position === "center") {
-      setCoords({ top: window.innerHeight / 2, left: window.innerWidth / 2 });
+      setCoords({ top: "50%", left: "50%" });
       return;
     }
 
     const target = document.getElementById(step.targetId);
     if (target) {
-      const rect = target.getBoundingClientRect();
-      let t = rect.top + rect.height / 2;
-      let l = rect.left + rect.width / 2;
-
-      // Smart flip: if bottom position goes off-screen, use top
-      const effectivePosition = (step.position === "bottom" && rect.bottom + 250 > window.innerHeight) 
-        ? "top" 
-        : step.position;
-
-      if (effectivePosition === "bottom") t = rect.bottom + 20;
-      if (effectivePosition === "top") t = rect.top - 220;
-      if (effectivePosition === "left") l = rect.left - 340;
-      if (effectivePosition === "right") l = rect.right + 20;
-
-      setCoords({ top: t, left: l });
       target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+      
+      const updatePosition = () => {
+        const rect = target.getBoundingClientRect();
+        let t = rect.top + rect.height / 2;
+        let l = rect.left + rect.width / 2;
+
+        if (step.position === "bottom") {
+          t = rect.bottom + 20;
+          // If off bottom, flip to top
+          if (t + 200 > window.innerHeight) t = rect.top - 220;
+        } else if (step.position === "top") {
+          t = rect.top - 220;
+          // If off top, flip to bottom
+          if (t < 20) t = rect.bottom + 20;
+        } else if (step.position === "left") {
+          l = rect.left - 340;
+          if (l < 20) l = rect.right + 20;
+        } else if (step.position === "right") {
+          l = rect.right + 20;
+          if (l + 320 > window.innerWidth) l = rect.left - 340;
+        }
+
+        // Clamp to screen bounds
+        t = Math.max(20, Math.min(t, window.innerHeight - 250));
+        l = Math.max(20, Math.min(l, window.innerWidth - 340));
+
+        setCoords({ top: `${t}px`, left: `${l}px` });
+      };
+
+      // Delay a bit for scroll to finish
+      const timer = setTimeout(updatePosition, 500);
       target.classList.add("tour-highlight");
       
+      window.addEventListener("resize", updatePosition);
+      window.addEventListener("scroll", updatePosition);
+
       return () => {
+        clearTimeout(timer);
         target.classList.remove("tour-highlight");
+        window.removeEventListener("resize", updatePosition);
+        window.removeEventListener("scroll", updatePosition);
       };
     }
-  }, [currentStep, step]);
+  }, [currentStep, step.targetId, step.position]);
 
   const handleNext = () => {
     if (currentStep < TOUR_STEPS.length - 1) {
