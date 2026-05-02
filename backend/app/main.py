@@ -6,6 +6,7 @@ Loads SystemPrompt.md from repo root; OpenRouter for LLM; optional clinic search
 
 import json
 import logging
+import os
 import uuid
 from typing import Any
 
@@ -18,15 +19,35 @@ from app.openrouter import complete_triage_json, complete_triage_json_repair
 from app.parser_safety import REQUIRED_DISCLAIMER, parse_triage_json, validate_needs_more_info_consistency
 from app.schemas import ChatMessage, ClinicResult, TriageJsonRequest, TriageResponse, TriageResult
 from app.uploads import prepare_upload
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Symptom Triage Assistant", version="0.1.0")
 
+def _load_system_prompt() -> str:
+    """Load instructions from the root SystemPrompt.md, searching multiple paths for cloud compatibility."""
+    possible_paths = [
+        os.path.join(os.path.dirname(__file__), "..", "..", "SystemPrompt.md"),  # Local / Standard
+        os.path.join(os.getcwd(), "SystemPrompt.md"),                            # Root
+        "/var/task/SystemPrompt.md",                                             # Vercel fallback
+    ]
+    
+    for path in possible_paths:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    return f.read()
+            except Exception:
+                continue
+                
+    logger.warning("SystemPrompt.md not found in any expected location. Using minimal fallback.")
+    return "You are a Symptom Triage Assistant. Help users understand the urgency of their symptoms."
+
+SYSTEM_PROMPT = _load_system_prompt()
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173", "http://localhost:4173"],
+    allow_origins=["*"],  # Flexible for hackathon deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
