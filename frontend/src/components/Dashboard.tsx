@@ -11,6 +11,21 @@ const TIER_LABELS: Record<string, string> = {
   INSUFFICIENT_INFO: "Need more information",
 };
 
+const TIER_ICONS: Record<string, string> = {
+  EMERGENCY: "🚨",
+  URGENT: "⚡",
+  SOON: "🕒",
+  ROUTINE: "📅",
+  SELF_CARE: "🏠",
+  INSUFFICIENT_INFO: "🔍",
+};
+
+const LIKELIHOOD_PERCENT: Record<string, string> = {
+  HIGH: "90%",
+  MEDIUM: "50%",
+  LOW: "20%",
+};
+
 interface DashboardProps {
   triage: TriageResult | null;
   clinicResults: ClinicResult[];
@@ -27,161 +42,184 @@ export function Dashboard({
 
   if (!triage) {
     return (
-      <section className="dashboard panel" aria-label="Triage summary">
-        <p className="dashboard-empty">
-          Your triage summary will appear here after you send symptoms (chat or
-          form).
-        </p>
+      <section id="dashboard-view" className="dashboard-panel panel empty" aria-label="Triage summary">
+        <div className="dashboard-empty-state">
+          <div className="empty-icon-large">📊</div>
+          <h3>Triage Summary</h3>
+          <p>
+            Your results will appear here after analysis. 
+            <strong> Enter an address above</strong> to find nearby clinics.
+          </p>
+        </div>
       </section>
     );
   }
 
-  const tierClass = `tier-badge tier-${triage.tier.toLowerCase()}`;
-  const isHighAlert =
-    triage.tier === "EMERGENCY" || triage.tier === "URGENT";
-  const hideClinicsDefault =
-    triage.tier === "EMERGENCY" && !showClinicsDespiteEmergency;
+  const isHighAlert = triage.tier === "EMERGENCY" || triage.tier === "URGENT";
+  const hideClinicsDefault = triage.tier === "EMERGENCY" && !showClinicsDespiteEmergency;
 
   return (
-    <section className="dashboard panel" aria-label="Triage summary">
-      {triage.mental_health_flag && (
-        <div className="dashboard-alert dashboard-alert--mh" role="status">
-          <strong>Mental health support</strong>
-          <p>
-            If you are in India, you can reach{" "}
-            <strong>iCall</strong> at <a href="tel:9152987821">9152987821</a>,{" "}
-            <strong>Tele-MANAS</strong> at{" "}
-            <a href="tel:14416">14416</a> /{" "}
-            <a href="tel:18008914416">1800-891-4416</a>, or{" "}
-            <strong>AASRA</strong> at{" "}
-            <a href="tel:9820466726">9820466726</a>. For abuse-related concerns,
-            Women Helpline <a href="tel:181">181</a>.
-          </p>
+    <section id="dashboard-view" className="dashboard-panel panel animate-fade-in" aria-label="Triage summary">
+      {/* High-Impact Urgency Header */}
+      <div className={`urgency-hero tier-${triage.tier.toLowerCase()}`}>
+        <div className="hero-icon">{TIER_ICONS[triage.tier]}</div>
+        <div className="hero-content">
+          <span className="hero-label">Recommended Urgency</span>
+          <h2 className="hero-title">{TIER_LABELS[triage.tier] ?? triage.tier}</h2>
+          <div className="hero-meta">
+            <span className="confidence-pill">
+              {triage.confidence} Confidence
+            </span>
+          </div>
         </div>
-      )}
-
-      {isHighAlert && (
-        <div
-          className={`dashboard-alert ${triage.tier === "EMERGENCY" ? "dashboard-alert--em" : "dashboard-alert--ur"}`}
-          role="alert"
-        >
-          <strong>
-            {triage.tier === "EMERGENCY"
-              ? "Possible emergency"
-              : "Urgent medical attention"}
-          </strong>
-          {triage.emergency_contact && (
-            <p className="dashboard-em-contact">
-              Emergency:{" "}
-              <a href={`tel:${triage.emergency_contact.replace(/\s/g, "")}`}>
-                {triage.emergency_contact}
-              </a>
-            </p>
-          )}
-        </div>
-      )}
-
-      <div className="dashboard-row">
-        <span className={tierClass}>{TIER_LABELS[triage.tier] ?? triage.tier}</span>
-        <span className="confidence-pill" title="How well inputs match the tier">
-          Confidence: {triage.confidence}
-        </span>
       </div>
 
-      {triage.needs_more_info && (
-        <p className="dashboard-meta">
-          More detail may help narrow this down safely.
-        </p>
-      )}
-
-      {triage.follow_up_questions.length > 0 && (
-        <div className="dashboard-block">
-          <h3>Questions to consider</h3>
-          <ul>
-            {triage.follow_up_questions.map((q) => (
-              <li key={q}>{q}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {triage.red_flags_detected.length > 0 && (
-        <div className="dashboard-block dashboard-block--flags">
-          <h3>Red flags noted</h3>
-          <ul>
-            {triage.red_flags_detected.map((r) => (
-              <li key={r}>{r}</li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {triage.suggested_conditions.length > 0 && (
-        <div className="dashboard-block">
-          <h3>Possible conditions (not a diagnosis)</h3>
-          <ul className="condition-list">
-            {triage.suggested_conditions.map((c) => (
-              <li key={c.name}>
-                <strong>{c.name}</strong>{" "}
-                <span className="likelihood">({c.likelihood})</span>
-                <div className="rationale">{c.rationale}</div>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      <div className="dashboard-block">
-        <h3>Recommended action</h3>
-        <p>{triage.recommended_action}</p>
-      </div>
-
-      <footer className="dashboard-disclaimer">
-        <p>{triage.disclaimer}</p>
-      </footer>
-
-      {clinicResults.length > 0 && hideClinicsDefault && (
-        <button
-          type="button"
-          className="btn-ghost dashboard-expand"
-          onClick={() => setShowClinicsDespiteEmergency(true)}
-        >
-          Show nearby clinic search results (non-emergency)
-        </button>
-      )}
-
-      {(clinicSearchStatus === "disabled" || clinicSearchStatus === "error") &&
-        triage.tier !== "EMERGENCY" && (
-          <p className="clinic-meta">
-            {clinicSearchStatus === "disabled"
-              ? "Clinic search is not configured (add Google CSE or MCP HTTP URL on the server)."
-              : "Clinic search failed — try again later."}
-          </p>
+      <div className="dashboard-scroll-area">
+        {triage.mental_health_flag && (
+          <div className="dashboard-alert dashboard-alert--mh" role="status">
+            <div className="alert-icon">🧘</div>
+            <div className="alert-content">
+              <strong>Mental health support</strong>
+              <p>
+                Reach <strong>Tele-MANAS</strong>: <a href="tel:14416">14416</a> or 
+                <strong> AASRA</strong>: <a href="tel:9820466726">9820466726</a>.
+              </p>
+            </div>
+          </div>
         )}
 
-      {clinicResults.length > 0 && !hideClinicsDefault && (
-        <div className="dashboard-block dashboard-block--clinics">
-          <h3>Nearby clinics (web search)</h3>
-          <p className="clinic-meta">
-            Third-party search results for wayfinding only — not medical
-            referrals or endorsements.
-          </p>
-          <ul className="clinic-list">
-            {clinicResults.map((c, i) => (
-              <li key={`${c.title}-${i}`}>
-                {c.url ? (
-                  <a href={c.url} target="_blank" rel="noopener noreferrer">
-                    {c.title}
-                  </a>
-                ) : (
-                  <span>{c.title}</span>
-                )}
-                {c.snippet && <div className="clinic-snippet">{c.snippet}</div>}
-              </li>
-            ))}
-          </ul>
+        {isHighAlert && triage.emergency_contact && (
+          <div className="emergency-contact-box">
+            <span className="box-label">Emergency Number</span>
+            <a href={`tel:${triage.emergency_contact.replace(/\s/g, "")}`} className="box-number">
+              {triage.emergency_contact}
+            </a>
+          </div>
+        )}
+
+        <div className="dashboard-section">
+          <h3 className="section-title">Analysis & Guidance</h3>
+          
+          <div className="recommendation-hero-card">
+            <div className="rec-icon-large">💡</div>
+            <div className="rec-text">
+              <h4>Recommended Action</h4>
+              <p>{triage.recommended_action}</p>
+            </div>
+          </div>
+
+          <div className="analysis-grid">
+            {triage.suggested_conditions.length > 0 && (
+              <div className="dashboard-block conditions-card">
+                <h3>Possible conditions</h3>
+                <div className="condition-stack">
+                  {triage.suggested_conditions.map((c, i) => (
+                    <div key={i} className="condition-card-mini">
+                      <div className="condition-info">
+                        <strong>{c.name}</strong>
+                        <p>{c.rationale}</p>
+                      </div>
+                      <div className="condition-meter-box">
+                        <span className={`likelihood-label likelihood-${c.likelihood.toLowerCase()}`}>
+                          {c.likelihood}
+                        </span>
+                        <div className="meter-bg">
+                          <div 
+                            className={`meter-fill likelihood-${c.likelihood.toLowerCase()}`} 
+                            style={{ width: LIKELIHOOD_PERCENT[c.likelihood] }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {triage.red_flags_detected.length > 0 && (
+              <div className="dashboard-block danger-card">
+                <h3>Red flags noted</h3>
+                <ul className="danger-list">
+                  {triage.red_flags_detected.map((r, i) => (
+                    <li key={i}>{r}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
-      )}
+
+        {triage.report_analysis && triage.report_analysis.length > 0 && (
+          <div className="dashboard-section animate-fade-in">
+            <h3 className="section-title">Medical Report Analysis</h3>
+            <div className="report-insight-grid">
+              {triage.report_analysis.map((insight, i) => (
+                <div key={i} className="report-insight-card">
+                  <div className="insight-header">
+                    <span className="insight-category">{insight.category}</span>
+                    <span className="insight-original">{insight.detail}</span>
+                  </div>
+                  <p className="insight-simple">
+                    <span className="sparkle-icon">✨</span>
+                    {insight.simplified_explanation}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {triage.follow_up_questions.length > 0 && (
+          <div className="dashboard-block questions-card">
+            <h3>Follow-up Considerations</h3>
+            <ul className="styled-list">
+              {triage.follow_up_questions.map((q, i) => (
+                <li key={i}>{q}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {clinicResults.length > 0 && (
+          <div className="dashboard-section">
+            <div className="section-header">
+              <h3 className="section-title">Nearby Facilities</h3>
+              {hideClinicsDefault && (
+                <button
+                  type="button"
+                  className="btn-link-small"
+                  onClick={() => setShowClinicsDespiteEmergency(true)}
+                >
+                  Show clinics
+                </button>
+              )}
+            </div>
+
+            {!hideClinicsDefault && (
+              <div className="clinic-compact-grid">
+                {clinicResults.map((c, i) => (
+                  <div key={i} className="clinic-card-mini">
+                    <div className="clinic-details">
+                      {c.url ? (
+                        <a href={c.url} target="_blank" rel="noopener noreferrer" className="clinic-name">
+                          {c.title}
+                        </a>
+                      ) : (
+                        <span className="clinic-name">{c.title}</span>
+                      )}
+                      {c.snippet && <p className="clinic-desc">{c.snippet}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        <footer className="dashboard-footer">
+          <p>{triage.disclaimer}</p>
+        </footer>
+      </div>
     </section>
   );
 }

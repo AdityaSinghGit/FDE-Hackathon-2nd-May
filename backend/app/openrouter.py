@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 async def complete_triage_json(
     chat_messages: list[dict[str, Any]],
+    clinic_results: list[Any] | None = None,
 ) -> str:
     """
     Send system prompt + chat messages to OpenRouter; return assistant message content.
@@ -33,9 +34,23 @@ async def complete_triage_json(
         "HTTP-Referer": "https://github.com/fde-hackathon/symptom-triage",
         "X-Title": "Symptom Triage Assistant",
     }
+    system_prompt = get_system_prompt()
+    if clinic_results:
+        clinic_list = "\n".join([
+            f"- {c.title}: {c.snippet or ''} (URL: {c.url or 'N/A'})" 
+            for c in clinic_results
+        ])
+        system_prompt += (
+            "\n\n## NEARBY CLINIC CONTEXT\n"
+            "The following clinics were found near the user's location. "
+            "If appropriate, mention that you've found these clinics in your `user_message` "
+            "to help the user know they can find care nearby in the dashboard results:\n"
+            f"{clinic_list}"
+        )
+
     body: dict[str, Any] = {
         "model": settings.openrouter_model,
-        "messages": [{"role": "system", "content": get_system_prompt()}, *chat_messages],
+        "messages": [{"role": "system", "content": system_prompt}, *chat_messages],
         "temperature": 0.2,
         "max_tokens": 4096,
     }
@@ -66,7 +81,11 @@ async def complete_triage_json(
     raise RuntimeError(f"OpenRouter request failed: {last_err}")
 
 
-async def complete_triage_json_repair(chat_messages: list[dict[str, Any]], bad_reply: str) -> str:
+async def complete_triage_json_repair(
+    chat_messages: list[dict[str, Any]], 
+    bad_reply: str,
+    clinic_results: list[Any] | None = None
+) -> str:
     """Second call asking only for valid JSON fixing the previous output."""
     if not settings.openrouter_api_key:
         raise RuntimeError("OPENROUTER_API_KEY is not set.")
@@ -90,9 +109,15 @@ async def complete_triage_json_repair(chat_messages: list[dict[str, Any]], bad_r
         "HTTP-Referer": "https://github.com/fde-hackathon/symptom-triage",
         "X-Title": "Symptom Triage Assistant",
     }
+    system_prompt = get_system_prompt()
+    if clinic_results:
+        # Re-inject context for repair as well
+        clinic_list = "\n".join([f"- {c.title}" for c in clinic_results])
+        system_prompt += f"\n\n## NEARBY CLINIC CONTEXT\n{clinic_list}"
+
     base_body: dict[str, Any] = {
         "model": settings.openrouter_model,
-        "messages": [{"role": "system", "content": get_system_prompt()}, *extended],
+        "messages": [{"role": "system", "content": system_prompt}, *extended],
         "temperature": 0.1,
         "max_tokens": 4096,
     }

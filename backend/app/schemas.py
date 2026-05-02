@@ -21,6 +21,14 @@ class SuggestedCondition(BaseModel):
     rationale: str
 
 
+class ReportInsight(BaseModel):
+    """Structured insight from an uploaded medical report."""
+
+    category: str  # e.g., "Findings", "Lab Results", "Medical Jargon"
+    detail: str  # The original text or finding
+    simplified_explanation: str  # Layman-friendly explanation
+
+
 class ClinicResult(BaseModel):
     """Normalized web search hit for nearby clinics (informational only)."""
 
@@ -50,6 +58,7 @@ class TriageResult(BaseModel):
     follow_up_questions: list[str] = Field(default_factory=list)
     needs_more_info: bool
     mental_health_flag: bool = False
+    report_analysis: list[ReportInsight] = Field(default_factory=list)
     user_message: str
     disclaimer: str
 

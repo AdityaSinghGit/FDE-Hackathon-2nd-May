@@ -197,12 +197,12 @@ async def _run_triage_pipeline(
             triage = _safe_fallback_triage("Add your OpenRouter API key to enable AI triage.")
             err_detail = "OPENROUTER_API_KEY missing"
         else:
-            raw = await complete_triage_json(llm_messages)
+            raw = await complete_triage_json(llm_messages, clinic_results=clinic_results if clinic_results else None)
             try:
                 triage = parse_triage_json(raw)
             except ValueError as e:
                 logger.warning("JSON parse failed, attempting repair: %s", e)
-                raw2 = await complete_triage_json_repair(llm_messages, raw)
+                raw2 = await complete_triage_json_repair(llm_messages, raw, clinic_results=clinic_results if clinic_results else None)
                 triage = parse_triage_json(raw2)
             triage = validate_needs_more_info_consistency(triage)
     except HTTPException:

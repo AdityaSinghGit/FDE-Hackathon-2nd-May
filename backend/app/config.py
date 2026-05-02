@@ -22,6 +22,9 @@ class Settings(BaseSettings):
     # Optional HTTP bridge compatible with Google Search MCP-style POST JSON
     clinic_search_mcp_http_url: str = ""  # CLINIC_SEARCH_MCP_HTTP_URL
 
+    # Enable mock results for demo purposes if search is unconfigured
+    enable_demo_clinics: bool = True
+
     max_message_length: int = 12000
     max_upload_bytes: int = 5 * 1024 * 1024  # 5 MB per file
     allowed_upload_mime: frozenset[str] = frozenset(
