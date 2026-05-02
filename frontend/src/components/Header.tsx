@@ -1,4 +1,3 @@
-import { useState } from "react";
 import type { Mode } from "../hooks/useTriage";
 
 interface HeaderProps {
@@ -6,12 +5,10 @@ interface HeaderProps {
   setMode: (mode: Mode) => void;
   onClear?: () => void;
   apiKey: string;
-  setApiKey: (val: string) => void;
+  onOpenSettings: () => void;
 }
 
-export function Header({ mode, setMode, apiKey, setApiKey }: HeaderProps) {
-  const [showKeyInput, setShowKeyInput] = useState(false);
-
+export function Header({ mode, setMode, apiKey, onOpenSettings }: HeaderProps) {
   return (
     <header className="app-header">
       <div className="app-header-content">
@@ -23,25 +20,11 @@ export function Header({ mode, setMode, apiKey, setApiKey }: HeaderProps) {
             <button 
               type="button" 
               className={`api-toggle ${apiKey ? 'has-key' : ''}`}
-              onClick={() => setShowKeyInput(!showKeyInput)}
-              title={apiKey ? "API Key Set" : "Click to set API Key"}
+              onClick={onOpenSettings}
+              title={apiKey ? "AI Configured" : "AI Configuration Required"}
             >
-              {apiKey ? "🔐 API Ready" : "🔑 Set API Key"}
+              {apiKey ? "⚙️ Settings" : "🔑 Setup AI"}
             </button>
-            {showKeyInput && (
-              <div className="api-input-overlay animate-slide-down">
-                <input
-                  type="password"
-                  placeholder="OpenRouter API Key (sk-or-...)"
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                  className="api-input"
-                />
-                <p className="api-hint">
-                  Saved locally in your browser. Used to process AI triage.
-                </p>
-              </div>
-            )}
           </div>
         </div>
         <p className="app-sub">

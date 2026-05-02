@@ -1,20 +1,29 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "./components/Header";
 import { ChatInterface } from "./components/ChatInterface";
 import { IntakeForm } from "./components/IntakeForm";
 import { Dashboard } from "./components/Dashboard";
 import { Landing } from "./components/Landing";
+import { ApiConfigModal } from "./components/ApiConfigModal";
 import { useTriage } from "./hooks/useTriage";
 import "./App.css";
 
 function App() {
   const [showLanding, setShowLanding] = useState(true);
+  const [showApiModal, setShowApiModal] = useState(false);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openrouter_api_key") || "");
 
   const handleSetApiKey = (val: string) => {
     setApiKey(val);
     localStorage.setItem("openrouter_api_key", val);
   };
+
+  useEffect(() => {
+    if (!showLanding && !apiKey) {
+      setShowApiModal(true);
+    }
+  }, [showLanding, apiKey]);
+
   const {
     mode,
     setMode,
@@ -49,7 +58,7 @@ function App() {
         setMode={setMode} 
         onClear={clearSession} 
         apiKey={apiKey}
-        setApiKey={handleSetApiKey}
+        onOpenSettings={() => setShowApiModal(true)}
       />
 
       <main id="main-content" className="layout-grid">
@@ -152,6 +161,14 @@ function App() {
           clinicSearchStatus={lastResponse?.clinic_search_status ?? "skipped"}
         />
       </main>
+
+      {showApiModal && (
+        <ApiConfigModal 
+          apiKey={apiKey} 
+          setApiKey={handleSetApiKey} 
+          onClose={() => setShowApiModal(false)} 
+        />
+      )}
 
       <footer className="app-footer">
         <p>
