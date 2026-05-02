@@ -87,6 +87,7 @@ export function ChatInterface({
 
       <form className="composer" onSubmit={handleChatSubmit}>
         <textarea
+          id="composer-textarea"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type your symptoms here..."

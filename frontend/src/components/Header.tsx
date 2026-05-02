@@ -16,7 +16,7 @@ export function Header({ mode, setMode, apiKey, onOpenSettings }: HeaderProps) {
           <h1 className="app-title">
             <span className="gradient-text">Symptom Triage</span> Assistant
           </h1>
-          <div className="api-settings">
+          <div id="api-settings-trigger" className="api-settings">
             <button 
               type="button" 
               className={`api-toggle ${apiKey ? 'has-key' : ''}`}
@@ -32,7 +32,7 @@ export function Header({ mode, setMode, apiKey, onOpenSettings }: HeaderProps) {
           street address for clinics is kept off the AI chat path.
         </p>
       </div>
-      <nav className="mode-tabs" aria-label="Input mode">
+      <nav id="mode-tabs" className="mode-tabs" aria-label="Input mode">
         <button
           type="button"
           data-active={mode === "chat"}

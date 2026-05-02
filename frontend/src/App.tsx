@@ -5,12 +5,14 @@ import { IntakeForm } from "./components/IntakeForm";
 import { Dashboard } from "./components/Dashboard";
 import { Landing } from "./components/Landing";
 import { ApiConfigModal } from "./components/ApiConfigModal";
+import { ProductTour } from "./components/ProductTour";
 import { useTriage } from "./hooks/useTriage";
 import "./App.css";
 
 function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [showApiModal, setShowApiModal] = useState(false);
+  const [showTour, setShowTour] = useState(false);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("openrouter_api_key") || "");
 
   const handleSetApiKey = (val: string) => {
@@ -19,10 +21,24 @@ function App() {
   };
 
   useEffect(() => {
-    if (!showLanding && !apiKey) {
+    if (!showLanding) {
+      const hasSeenTour = localStorage.getItem("has_seen_tour_v1");
+      if (!hasSeenTour) {
+        setShowTour(true);
+      }
+    }
+  }, [showLanding]);
+
+  const handleTourComplete = () => {
+    setShowTour(false);
+    localStorage.setItem("has_seen_tour_v1", "true");
+  };
+
+  useEffect(() => {
+    if (!showLanding && !apiKey && !showTour) {
       setShowApiModal(true);
     }
-  }, [showLanding, apiKey]);
+  }, [showLanding, apiKey, showTour]);
 
   const {
     mode,
@@ -169,6 +185,8 @@ function App() {
           onClose={() => setShowApiModal(false)} 
         />
       )}
+
+      {showTour && <ProductTour onComplete={handleTourComplete} />}
 
       <footer className="app-footer">
         <p>
